@@ -1,0 +1,1 @@
+docker image remove ares152/skuska_zkt:v1

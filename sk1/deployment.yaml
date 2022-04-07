@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webserver
+  labels:
+    app: apache
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: apache
+  template:
+    metadata:
+      labels:
+        app: apache
+    spec:
+      containers:
+      - name: php-apache
+        image: ares152/web_php:9
+        ports:
+        - containerPort: 80
+---
+apiVersion: apps/v1
+# Druh objektu
+kind: Deployment
+# O objekte
+metadata:
+  # Meno objektu
+  name: adminer
+# špecifikácia objektu
+spec:
+  # Počet podov ktorý sa má vytvoriť
+  replicas: 1
+  # Selektor vytvára prepojenie Deploymentu a Podu
+  # Vyberá tie PODy ktoré majú štítok nginx
+  selector:
+    matchLabels:
+      app: adminer
+  # Šablóna PODu
+  template:
+    metadata:
+      # štítok PODu - na spojenie Deploymentu a Podu
+      labels:
+        app: adminer
+    spec:
+      # kontajnery PODu
+      containers:
+      # Len jeden kontajner s aplikáciou nginx
+      - name: adminer
+        # Meno a verzia obrazu
+        image: adminer:latest
+        ports:
+        # POD má otvorený port 80
+        - containerPort: 8080
+        env:
+        - name: ADMINER_DEFAULT_DB_DRIVER
+          value: mysql
+        - name: ADMINER_DEFAULT_DB_HOST
+          value: mariadb
+---
+apiVersion: apps/v1 
+kind: Deployment
+metadata:
+  name: mysql
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - image: mysql:latest
+        name: mysql
+        #imagePullPolicy: Never
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: root
+        #args: ["--default-authentication-plugin=mysql_native_password"]
+        ports:
+        - containerPort: 3306
+          name: mysql
+        volumeMounts:
+          - name: mysql-persistent-storage
+            mountPath: /var/lib/mysql
+      volumes:
+      - name: mysql-persistent-storage
+        persistentVolumeClaim:
+          claimName: mysql-pv-claim
